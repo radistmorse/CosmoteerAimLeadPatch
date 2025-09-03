@@ -16,4 +16,19 @@ namespace CosmoteerAim
             Halfling.Logging.Logger.Log("[Aim Lead] Mod Loaded");
         }
     }
+
+    [HarmonyPatch]
+    public class ModInfo
+    {
+        [HarmonyPatch(typeof(Cosmoteer.Mods.ModInfo), "TryLoadMod")]
+        [HarmonyPostfix]
+        public static void TryLoadModPatch(ref Cosmoteer.Mods.ModInfo modInfo)
+        {
+            if (modInfo.ID == "radistmorse.attackaimlead")
+            {
+                // remove the warning from the description
+                modInfo.Description = modInfo.Description?.Split(['\r', '\n']).First();
+            }
+        }
+    }
 }
