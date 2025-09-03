@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Lib.Harmony" Version="2.3.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Cosmoteer">
+      <HintPath>..\libs\Cosmoteer.dll</HintPath>
+    </Reference>
+    <Reference Include="HalflingCore">
+      <HintPath>..\libs\HalflingCore.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Publicize Include="Cosmoteer" IncludeCompilerGeneratedMembers="false" />
+    <Publicize Include="HalflingCore" IncludeCompilerGeneratedMembers="false" />
+  </ItemGroup>
+
+</Project>
