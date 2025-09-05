@@ -71,7 +71,7 @@ namespace CosmoteerAim
 
             // calculate the angular speed of the target
             var targetDirection = attackCommand.Target.DetWorldCenter - attackCommand.Ship.DetWorldCenter;
-            var targetVelocity = attackCommand.Target.Physics.Body.LinearVelocity;
+            var targetVelocity = attackCommand.Target.Physics.Body.LinearVelocity - attackCommand.Ship.Physics.Body.LinearVelocity;
             var targetRotSpeed = targetDirection.Cross(targetVelocity) / targetDirection.LengthSquared;
 
             // the following is the default Command.GetDesiredRotationalSRA method, unless noted
