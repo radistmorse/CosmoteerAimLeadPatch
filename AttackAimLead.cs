@@ -71,43 +71,35 @@ namespace CosmoteerAim
 
             // calculate the angular speed of the target
             var targetDirection = attackCommand.Target.DetWorldCenter - attackCommand.Ship.DetWorldCenter;
-            var targetVelocity = attackCommand.Target.Physics.Body.LinearVelocity - attackCommand.Ship.Physics.Body.LinearVelocity;
+            var targetVelocity = attackCommand.Target.Physics.Body?.LinearVelocity??Vector2.Zero - attackCommand.Ship.Physics.Body?.LinearVelocity??Vector2.Zero;
             var targetRotSpeed = targetDirection.Cross(targetVelocity) / targetDirection.LengthSquared;
 
             // the following is the default Command.GetDesiredRotationalSRA method, unless noted
-            float curSRV = __instance.Ship.Physics.Body.AngularVelocity;
+            float curSRV = __instance.Ship.Physics.Body?.AngularVelocity??0f;
             Direction desRot = desiredRot.GetValueOrDefault();
             Angle rotOffset = __instance.Ship.DetRotation.PositiveAngleTo(desRot);
             Angle rotOffset2 = rotOffset - Angle.ThreeSixty;
-            float decel;
-            float rampUpTime;
-            float rampDownTime;
-            if (curSRV.Equals(0f))
+            float decel = 0f;
+            float rampUpTime = 0f;
+            float rampDownTime = 0f;
+            if (curSRV != 0f)
             {
-                decel = 0f;
-                rampUpTime = 0f;
-                rampDownTime = 0f;
+                (decel, rampUpTime, rampDownTime) = __instance.Ship.Thrusters.CalculateMaximumAccelerationAndRampTimeCached(new Vector3(0f, 0f, -Mathx.Sign(curSRV)),
+                                                                                                                            interval,
+                                                                                                                            __instance.Rules.ThrusterSRFStrafeFactors,
+                                                                                                                            ThrusterManager.ActivationRangeType.Deceleration);
             }
-            else
-            {
-                ValueTuple<float, float, float> valueTuple = __instance.Ship.Thrusters
-                                                                .CalculateMaximumAccelerationAndRampTimeCached(new Vector3(0f, 0f, -(float)Mathx.Sign(curSRV)),
-                                                                                                               interval,
-                                                                                                               __instance.Rules.ThrusterSRFStrafeFactors,
-                                                                                                               ThrusterManager.ActivationRangeType.Deceleration);
-                decel = valueTuple.Item1;
-                rampUpTime = valueTuple.Item2;
-                rampDownTime = valueTuple.Item3;
-            }
-            float sign = (float)Mathx.Sign(curSRV);
+
+            float sign = Mathx.Sign(curSRV);
             decel *= -sign;
-            float damping = __instance.Ship.Rules.MinAngularDamping * __instance.Ship.Nebulas.AngularDampingFactor;
+            Halfling.Physics2D.Dynamics.Drag.IAngularDragSolver? dragSolver = __instance.Ship.Physics.Body?.AngularDragSolver;
+            float angularDampingFactor = __instance.Ship.Nebulas.AngularDampingFactor;
             float curAccel = __instance.Ship.Thrusters.AngularAcceleration;
             // since we want to maintain the targetRotSpeed we only calculate the deceleration for the excess speed
             float decelerationSRV = curSRV - targetRotSpeed;
             // this is not exactly correct, since CalculateDecelerationDistance is not linear, but it is shit anyway so who cares.
             // I'm sorry, whoever wrote it, but it's true. There are simpler ways of solving quadratic equations than through numerical integration.
-            float rotDecalOffset = __instance.CalculateDecelerationDistance(decelerationSRV * sign, decel * sign, rampUpTime, curAccel * sign, rampDownTime, damping, 0f) * sign;
+            float rotDecalOffset = __instance.CalculateDecelerationDistance(decelerationSRV * sign, decel * sign, rampUpTime, curAccel * sign, rampDownTime, dragSolver, angularDampingFactor, 0f) * sign;
             Angle smartRotOffset2 = rotOffset - rotDecalOffset;
             Angle smartRotOffset3 = rotOffset2 - rotDecalOffset;
             smartRotOffset = ((Mathx.Abs(smartRotOffset2) <= Mathx.Abs(smartRotOffset3)) ? smartRotOffset2 : smartRotOffset3);
@@ -117,14 +109,14 @@ namespace CosmoteerAim
             // originally there were no parentheses, I have no idea what logic was behind it
             float desiredSRA = (desiredSRV - curSRV) * __instance.Ship.Rules.RetroAngularVelocityCalculateFactor;
             __result = Mathx.Clamp(desiredSRA,
-                                   -__instance.Ship.Thrusters.CalculateMaximumAccelerationAndRampTimeCached(new Vector3(0f, 0f, -1f),
-                                                                                                            interval,
-                                                                                                            __instance.Rules.ThrusterSRFStrafeFactors,
-                                                                                                            ThrusterManager.ActivationRangeType.Unclamped).Item1,
-                                   __instance.Ship.Thrusters.CalculateMaximumAccelerationAndRampTimeCached(new Vector3(0f, 0f, 1f),
-                                                                                                           interval,
-                                                                                                           __instance.Rules.ThrusterSRFStrafeFactors,
-                                                                                                           ThrusterManager.ActivationRangeType.Unclamped).Item1);
+                               -__instance.Ship.Thrusters.CalculateMaximumAccelerationAndRampTimeCached(new Vector3(0f, 0f, -1f),
+                                                                                                        interval,
+                                                                                                        __instance.Rules.ThrusterSRFStrafeFactors,
+                                                                                                        ThrusterManager.ActivationRangeType.Unclamped).Accel,
+                               __instance.Ship.Thrusters.CalculateMaximumAccelerationAndRampTimeCached(new Vector3(0f, 0f, 1f),
+                                                                                                       interval,
+                                                                                                       __instance.Rules.ThrusterSRFStrafeFactors,
+                                                                                                       ThrusterManager.ActivationRangeType.Unclamped).Accel);
             return false;
         }
     }
